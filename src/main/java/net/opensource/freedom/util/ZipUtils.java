@@ -9,10 +9,12 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Enumeration;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 public abstract class ZipUtils {
 
@@ -43,6 +45,30 @@ public abstract class ZipUtils {
             Path tempDirectory = Files.createTempDirectory("util4j-unzip");
             unzip(srcZipFile, tempDirectory.toFile());
             return tempDirectory.toFile();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public static void unzip(InputStream inputStream, File targetDir) {
+        try (ZipInputStream zis = new ZipInputStream(inputStream)) {
+            while (true) {
+                ZipEntry entry = zis.getNextEntry();
+                if (Objects.isNull(entry)) {
+                    break;
+                }
+
+                File entryDestination = new File(targetDir, entry.getName());
+                if (entry.isDirectory()) {
+                    entryDestination.mkdirs();
+                } else {
+                    entryDestination.getParentFile().mkdirs();
+                    OutputStream out = new FileOutputStream(entryDestination);
+                    IOUtils.copy(zis, out);
+                    out.close();
+                }
+
+            }
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
